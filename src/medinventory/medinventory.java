@@ -3,7 +3,12 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
  */
 package medinventory;
-
+import java.awt.event.KeyEvent;
+import java.sql.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.sql.ResultSet;
+import javax.swing.JOptionPane;
 /**
  *
  * @author Manas
@@ -15,6 +20,24 @@ public class medinventory extends javax.swing.JFrame {
      */
     public medinventory() {
         initComponents();
+        Connect();
+    }
+    
+    Connection con;
+    PreparedStatement pst;
+    ResultSet rs;
+    
+    
+    public void Connect()
+    {
+        try {
+            Class.forName("com.mysql.jdbc.Driver");
+            con= DriverManager.getConnection("jdbc:mysql://localhost/pharmacy","root","");   
+        } catch (ClassNotFoundException ex) {
+            Logger.getLogger(medinventory.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (SQLException ex) {
+            Logger.getLogger(medinventory.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 
     /**
@@ -34,7 +57,7 @@ public class medinventory extends javax.swing.JFrame {
         jLabel4 = new javax.swing.JLabel();
         txtdcode = new javax.swing.JTextField();
         txtdname = new javax.swing.JTextField();
-        jSpinner1 = new javax.swing.JSpinner();
+        txtqty = new javax.swing.JSpinner();
         jLabel5 = new javax.swing.JLabel();
         jLabel6 = new javax.swing.JLabel();
         jLabel7 = new javax.swing.JLabel();
@@ -90,10 +113,15 @@ public class medinventory extends javax.swing.JFrame {
                 txtdcodeActionPerformed(evt);
             }
         });
+        txtdcode.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyPressed(java.awt.event.KeyEvent evt) {
+                txtdcodeKeyPressed(evt);
+            }
+        });
 
         txtdname.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
 
-        jSpinner1.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        txtqty.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
 
         jLabel5.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         jLabel5.setText("Total Cost");
@@ -157,7 +185,7 @@ public class medinventory extends javax.swing.JFrame {
                 .addGap(40, 40, 40)
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel2Layout.createSequentialGroup()
-                        .addComponent(jSpinner1, javax.swing.GroupLayout.PREFERRED_SIZE, 84, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(txtqty, javax.swing.GroupLayout.PREFERRED_SIZE, 84, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(144, 144, 144)
                         .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 91, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
@@ -206,7 +234,7 @@ public class medinventory extends javax.swing.JFrame {
                         .addGap(27, 27, 27)
                         .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(jLabel4)
-                            .addComponent(jSpinner1, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                            .addComponent(txtqty, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)))
                     .addGroup(jPanel2Layout.createSequentialGroup()
                         .addGap(18, 18, 18)
                         .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)))
@@ -298,6 +326,43 @@ public class medinventory extends javax.swing.JFrame {
         // TODO add your handling code here:
     }//GEN-LAST:event_txtpriceActionPerformed
 
+    private void txtdcodeKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_txtdcodeKeyPressed
+
+            if(evt.getKeyCode()==KeyEvent.VK_ENTER)
+            {
+                try {
+                    String dcode = txtdcode.getText();
+                    pst = con.prepareStatement("select * from product where id = ?");
+                    pst.setString(1, dcode);
+                    rs = pst.executeQuery();
+                    
+                    if(rs.next() == false)
+                    {
+                        JOptionPane.showMessageDialog(this, "Drug Code Not Found");
+                    }
+                    else
+                    {
+                        String dname = rs.getString("drugname");
+                        txtdname.setText(dname.trim());
+                        String price = rs.getString("price");
+                        txtprice.setText(price.trim());
+                        txtqty.requestFocus();
+                    }
+                    
+                }
+                // TODO add your handling code here:
+                catch (SQLException ex) {
+                    Logger.getLogger(medinventory.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                
+            }
+
+
+
+
+
+    }//GEN-LAST:event_txtdcodeKeyPressed
+
     /**
      * @param args the command line arguments
      */
@@ -347,13 +412,13 @@ public class medinventory extends javax.swing.JFrame {
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JSpinner jSpinner1;
     private javax.swing.JTable jTable1;
     private javax.swing.JTextField txtbal;
     private javax.swing.JTextField txtdcode;
     private javax.swing.JTextField txtdname;
     private javax.swing.JTextField txtpay;
     private javax.swing.JTextField txtprice;
+    private javax.swing.JSpinner txtqty;
     private javax.swing.JTextField txttcost;
     // End of variables declaration//GEN-END:variables
 }
