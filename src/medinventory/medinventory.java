@@ -1,14 +1,22 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
- */
 package medinventory;
+
 import java.awt.event.KeyEvent;
 import java.sql.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.sql.ResultSet;
+import java.util.HashMap;
 import javax.swing.JOptionPane;
+import javax.swing.table.DefaultTableModel;
+import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.JasperCompileManager;
+import net.sf.jasperreports.engine.JasperFillManager;
+import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.JasperReport;
+import net.sf.jasperreports.engine.design.JasperDesign;
+import net.sf.jasperreports.engine.xml.JRXmlLoader;
+import net.sf.jasperreports.view.JasperViewer;
+
 /**
  *
  * @author Manas
@@ -22,20 +30,76 @@ public class medinventory extends javax.swing.JFrame {
         initComponents();
         Connect();
     }
-    
-    Connection con;
+
+    static Connection con;
     PreparedStatement pst;
+    PreparedStatement pst1;
     ResultSet rs;
-    
-    
-    public void Connect()
-    {
+    DefaultTableModel df;
+
+    public static void Connect() {
         try {
-            Class.forName("com.mysql.jdbc.Driver");
-            con= DriverManager.getConnection("jdbc:mysql://localhost/pharmacy","root","");   
-        } catch (ClassNotFoundException ex) {
-            Logger.getLogger(medinventory.class.getName()).log(Level.SEVERE, null, ex);
+            // Class.forName("com.mysql.jdbc.Driver");
+            con = DriverManager.getConnection("jdbc:mysql://sql.freedb.tech/freedb_pharma",
+                    "freedb_pharma-user",
+                    "Atm8Hp#THdhN3gm");
         } catch (SQLException ex) {
+            Logger.getLogger(medinventory.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    public void sales() throws SQLException {
+        String totalcost = txttcost.getText();
+        String pay = txtpay.getText();
+        String bal = txtbal.getText();
+
+        int lastid = 0;
+        String query = "insert into sales(subtotal,pay,bal)values(?,?,?)";
+        pst = con.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
+        pst.setString(1, totalcost);
+        pst.setString(2, pay);
+        pst.setString(3, bal);
+        pst.executeUpdate();
+        rs = pst.getGeneratedKeys();
+
+        if (rs.next()) {
+            lastid = rs.getInt(1);
+        }
+
+        String query1 = "insert into sales_product(sales_id,drugname,price,qty,total)values(?,?,?,?,?)";
+        pst1 = con.prepareStatement(query1);
+
+        String drugname;
+        String price;
+        String qty;
+        int total;
+
+        for (int i = 0; i < jTable1.getRowCount(); i++) {
+            drugname = (String) jTable1.getValueAt(i, 0);
+            price = (String) jTable1.getValueAt(i, 1);
+            qty = (String) jTable1.getValueAt(i, 2);
+            total = (int) jTable1.getValueAt(i, 3);
+
+            pst1.setInt(1, lastid);
+            pst1.setString(2, drugname);
+            pst1.setString(3, price);
+            pst1.setString(4, qty);
+            pst1.setInt(5, total);
+            pst1.executeUpdate();
+        }
+        JOptionPane.showMessageDialog(this, "Successful");
+        HashMap a = new HashMap();
+        a.put("invo", lastid);
+        
+        try {
+            JasperDesign jdesign = 
+                    JRXmlLoader.load("./report1.jrxml");
+            JasperReport jreport = JasperCompileManager.compileReport(jdesign);
+            
+            JasperPrint jprint = JasperFillManager.fillReport(jreport, a, con);
+            JasperViewer.viewReport(jprint);
+            
+        } catch (JRException ex) {
             Logger.getLogger(medinventory.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
@@ -243,10 +307,7 @@ public class medinventory extends javax.swing.JFrame {
 
         jTable1.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null}
+
             },
             new String [] {
                 "Drug Name", "Price", "Qty", "Total"
@@ -276,7 +337,7 @@ public class medinventory extends javax.swing.JFrame {
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, 864, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(41, 41, 41))
+                .addGap(38, 38, 38))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -316,10 +377,45 @@ public class medinventory extends javax.swing.JFrame {
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
         // TODO add your handling code here:
+        int price, qty, total;
+        price = Integer.parseInt(txtprice.getText());
+        qty = Integer.parseInt(txtqty.getValue().toString());
+        total = price * qty;
+        df = (DefaultTableModel) jTable1.getModel();
+        df.addRow(new Object[]{
+            txtdname.getText(),
+            txtprice.getText(),
+            txtqty.getValue().toString(),
+            total
+        });
+
+        int sum = 0;
+        for (int i = 0; i < jTable1.getRowCount(); i++) {
+            sum = sum + Integer.parseInt(jTable1.getValueAt(i, 3).toString());
+        }
+
+        txttcost.setText(String.valueOf(sum));
+        txtdcode.setText("");
+        txtdname.setText("");
+        txtqty.setValue(0);
+        txtprice.setText("");
+        // this.pack();
+        // this.setSize(this.getWidth() + 10, this.getHeight());
+        txtdcode.requestFocus();
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
         // TODO add your handling code here:
+        int totalcost = Integer.parseInt(txttcost.getText());
+        int pay = Integer.parseInt(txtpay.getText());
+        int tot = pay - totalcost;
+        txtbal.setText(String.valueOf(tot));
+
+        try {
+            sales();
+        } catch (SQLException ex) {
+            Logger.getLogger(medinventory.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }//GEN-LAST:event_jButton2ActionPerformed
 
     private void txtpriceActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtpriceActionPerformed
@@ -328,39 +424,27 @@ public class medinventory extends javax.swing.JFrame {
 
     private void txtdcodeKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_txtdcodeKeyPressed
 
-            if(evt.getKeyCode()==KeyEvent.VK_ENTER)
-            {
-                try {
-                    String dcode = txtdcode.getText();
-                    pst = con.prepareStatement("select * from product where id = ?");
-                    pst.setString(1, dcode);
-                    rs = pst.executeQuery();
-                    
-                    if(rs.next() == false)
-                    {
-                        JOptionPane.showMessageDialog(this, "Drug Code Not Found");
-                    }
-                    else
-                    {
-                        String dname = rs.getString("drugname");
-                        txtdname.setText(dname.trim());
-                        String price = rs.getString("price");
-                        txtprice.setText(price.trim());
-                        txtqty.requestFocus();
-                    }
-                    
+        if (evt.getKeyCode() == KeyEvent.VK_ENTER) {
+            try {
+                String dcode = txtdcode.getText();
+                pst = con.prepareStatement("select * from product where id = ?");
+                pst.setString(1, dcode);
+                rs = pst.executeQuery();
+
+                if (rs.next() == false) {
+                    JOptionPane.showMessageDialog(this, "Drug Code Not Found");
+                } else {
+                    String dname = rs.getString("drugname");
+                    txtdname.setText(dname.trim());
+                    String price = rs.getString("price");
+                    txtprice.setText(price.trim());
+                    txtqty.requestFocus();
                 }
-                // TODO add your handling code here:
-                catch (SQLException ex) {
-                    Logger.getLogger(medinventory.class.getName()).log(Level.SEVERE, null, ex);
-                }
-                
+            } // TODO add your handling code here:
+            catch (SQLException ex) {
+                Logger.getLogger(medinventory.class.getName()).log(Level.SEVERE, null, ex);
             }
-
-
-
-
-
+        }
     }//GEN-LAST:event_txtdcodeKeyPressed
 
     /**
