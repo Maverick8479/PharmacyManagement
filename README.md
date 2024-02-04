@@ -1,1 +1,2 @@
 # javaminiproject
+![Screenshot](/PharamacyMangementSreenshot.png)
